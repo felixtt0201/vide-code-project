@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>專案管理追蹤事項</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <h1>專案管理追蹤事項</h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Overview View -->
+    <section id="overview" class="view">
+      <div class="container">
+        <!-- Project Info Card -->
+        <div class="card project-info">
+          <h2>專案資訊</h2>
+          <p><strong>名稱：</strong> <span id="projectName"></span></p>
+          <p><strong>建立日期：</strong> <span id="projectCreated"></span></p>
+          <p><strong>預計完成：</strong> <span id="projectTarget"></span></p>
+        </div>
+
+        <!-- Progress Card -->
+        <div class="card progress-card">
+          <h2>專案進度</h2>
+          <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <p id="progressText" class="progress-text"></p>
+        </div>
+
+        <!-- Status Statistics -->
+        <div class="card status-stats">
+          <h2>狀態統計</h2>
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="stat-count" id="countPending">0</div>
+              <div class="stat-label">待處理</div>
+            </div>
+            <div class="stat">
+              <div class="stat-count" id="countInProgress">0</div>
+              <div class="stat-label">進行中</div>
+            </div>
+            <div class="stat">
+              <div class="stat-count" id="countCompleted">0</div>
+              <div class="stat-label">已完成</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Urgent Tasks -->
+        <div class="card urgent-tasks">
+          <h2>即將到期事項</h2>
+          <div id="urgentList"></div>
+        </div>
+
+        <button id="viewAllBtn" class="btn btn-primary">查看所有事項</button>
+      </div>
+    </section>
+
+    <!-- List View -->
+    <section id="list" class="view hidden">
+      <div class="container">
+        <button id="backBtn" class="btn btn-secondary">返回總覽</button>
+
+        <!-- Filter Buttons -->
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all">全部</button>
+          <button class="filter-btn" data-filter="待處理">待處理</button>
+          <button class="filter-btn" data-filter="進行中">進行中</button>
+          <button class="filter-btn" data-filter="已完成">已完成</button>
+        </div>
+
+        <p id="filterText" class="filter-text">顯示所有事項</p>
+
+        <!-- Tasks Table -->
+        <table class="table">
+          <thead>
+            <tr>
+              <th>事項</th>
+              <th>負責人</th>
+              <th>優先級</th>
+              <th>狀態</th>
+              <th>期限</th>
+            </tr>
+          </thead>
+          <tbody id="taskList"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button id="closeModal" class="btn-close">×</button>
+      <h2 id="modalTitle"></h2>
+      <div class="modal-body">
+        <p><strong>負責人：</strong> <span id="modalAssignee"></span></p>
+        <p><strong>優先級：</strong> <span id="modalPriority"></span></p>
+        <p><strong>狀態：</strong> <span id="modalStatus"></span></p>
+        <p><strong>預計完成日期：</strong> <span id="modalDueDate"></span></p>
+        <p><strong>建立日期：</strong> <span id="modalCreatedDate"></span></p>
+        <p><strong>備註：</strong></p>
+        <p id="modalDescription"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Script -->
+  <script>
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const project = {
+      name: '社群平台升級專案',
+      createdDate: '2026-06-01',
+      targetDate: '2026-12-31',
+      progress: 65
+    };
+
+    const tasks = [
+      {
+        id: 1,
+        name: '完成首頁設計稿',
+        description: '設計首頁的高保真原型，包括導航、hero 區域、功能卡片區塊。',
+        assignee: '王小明',
+        priority: '高',
+        status: '已完成',
+        dueDate: '2026-08-05',
+        createdDate: '2026-07-15'
+      },
+      {
+        id: 2,
+        name: '前端框架選型評估',
+        description: '評估 React、Vue、Svelte 等框架的適用性，撰寫技術決策文檔。',
+        assignee: '李芳美',
+        priority: '高',
+        status: '進行中',
+        dueDate: '2026-08-10',
+        createdDate: '2026-07-20'
+      },
+      {
+        id: 3,
+        name: '資料庫架構設計',
+        description: '設計用戶、內容、互動等核心表結構，完成 ER 圖。',
+        assignee: '陳建宏',
+        priority: '高',
+        status: '進行中',
+        dueDate: '2026-08-15',
+        createdDate: '2026-07-22'
+      },
+      {
+        id: 4,
+        name: 'API 文檔編寫',
+        description: '撰寫完整的 REST API 文檔，包括端點、參數、範例。',
+        assignee: '王小明',
+        priority: '中',
+        status: '待處理',
+        dueDate: '2026-08-20',
+        createdDate: '2026-07-25'
+      },
+      {
+        id: 5,
+        name: '使用者認證系統開發',
+        description: '實現登入、登出、密碼重置等認證功能，整合 OAuth 2.0。',
+        assignee: '李芳美',
+        priority: '中',
+        status: '進行中',
+        dueDate: '2026-08-25',
+        createdDate: '2026-07-18'
+      },
+      {
+        id: 6,
+        name: '內容發布流程測試',
+        description: '測試內容從草稿到發布的完整流程，確保無異常。',
+        assignee: '陳建宏',
+        priority: '中',
+        status: '待處理',
+        dueDate: '2026-08-18',
+        createdDate: '2026-07-28'
+      },
+      {
+        id: 7,
+        name: '搜尋功能優化',
+        description: '改進全文搜尋算法，提升查詢速度和相關性。',
+        assignee: '王小明',
+        priority: '低',
+        status: '待處理',
+        dueDate: '2026-09-05',
+        createdDate: '2026-08-01'
+      },
+      {
+        id: 8,
+        name: '效能監控儀表板',
+        description: '開發 Grafana 儀表板監控系統效能、錯誤率、延遲等指標。',
+        assignee: '李芳美',
+        priority: '低',
+        status: '已完成',
+        dueDate: '2026-08-12',
+        createdDate: '2026-07-16'
+      },
+      {
+        id: 9,
+        name: '行動版本適配',
+        description: '確保所有頁面在手機、平板上的顯示效果，修正響應式問題。',
+        assignee: '陳建宏',
+        priority: '高',
+        status: '待處理',
+        dueDate: '2026-08-22',
+        createdDate: '2026-08-02'
+      },
+      {
+        id: 10,
+        name: '安全漏洞掃描與修復',
+        description: '進行 SQL 注入、XSS、CSRF 等安全審計，修復發現的漏洞。',
+        assignee: '王小明',
+        priority: '高',
+        status: '進行中',
+        dueDate: '2026-08-28',
+        createdDate: '2026-07-30'
+      },
+      {
+        id: 11,
+        name: '文檔站點建立',
+        description: '建立技術文檔網站，包括 API、架構、貢獻指南等。',
+        assignee: '李芳美',
+        priority: '中',
+        status: '已完成',
+        dueDate: '2026-08-08',
+        createdDate: '2026-07-24'
+      },
+      {
+        id: 12,
+        name: '用戶回饋系統開發',
+        description: '實現用戶評論、評分、問題回報等回饋機制。',
+        assignee: '陳建宏',
+        priority: '低',
+        status: '待處理',
+        dueDate: '2026-09-10',
+        createdDate: '2026-08-03'
+      }
+    ];
+  </script>
+
+  <script src="./app.js"></script>
+</body>
+</html>
