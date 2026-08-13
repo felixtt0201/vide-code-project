@@ -1,227 +1,436 @@
-// Initialize page on DOM ready
+// ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', () => {
-  renderOverview();
-  initializeEventListeners();
-  populateTaskList(tasks);
+  initializeApp();
 });
 
-// Render overview page
-function renderOverview() {
-  document.getElementById('projectName').textContent = project.name;
-  document.getElementById('projectCreated').textContent = project.createdDate;
-  document.getElementById('projectTarget').textContent = project.targetDate;
-  document.getElementById('progressFill').style.width = project.progress + '%';
-  document.getElementById('progressText').textContent = project.progress + '% 完成';
-
-  const counts = getStatusCounts();
-  document.getElementById('countPending').textContent = counts.pending;
-  document.getElementById('countInProgress').textContent = counts.inProgress;
-  document.getElementById('countCompleted').textContent = counts.completed;
-
-  const priorityCounts = getPriorityCounts();
-  document.getElementById('countHigh').textContent = priorityCounts.high;
-  document.getElementById('countMedium').textContent = priorityCounts.medium;
-  document.getElementById('countLow').textContent = priorityCounts.low;
-
-  renderUrgentTasks();
+function initializeApp() {
+  renderTodayDate();
+  renderTodayView();
+  initializeEventListeners();
+  populateProjectSelects();
 }
 
-// Get status counts
-function getStatusCounts() {
-  return {
-    pending: tasks.filter(t => t.status === '待處理').length,
-    inProgress: tasks.filter(t => t.status === '進行中').length,
-    completed: tasks.filter(t => t.status === '已完成').length
-  };
+// ===== 工具函數 =====
+
+// 設定今天日期顯示
+function renderTodayDate() {
+  const todayDateEl = document.getElementById('todayDate');
+  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+  todayDateEl.textContent = today.toLocaleDateString('zh-TW', options);
 }
 
-// Get priority counts
-function getPriorityCounts() {
-  return {
-    high: tasks.filter(t => t.priority === '高').length,
-    medium: tasks.filter(t => t.priority === '中').length,
-    low: tasks.filter(t => t.priority === '低').length
-  };
+// 判斷是否逾期
+function isOverdue(dueDate, status) {
+  if (status === '已完成') return false;
+  return new Date(dueDate) < today;
 }
 
-// Get timeline status
-function getTimelineStatus(dueDate, status) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+// 判斷是否今天
+function isToday(dueDate) {
+  const due = new Date(dueDate);
+  return due.toDateString() === today.toDateString();
+}
+
+// 判斷是否即將到期（3 天內）
+function isUrgent(dueDate) {
   const due = new Date(dueDate);
   const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-
-  if (status === '已完成') return 'normal';
-  if (diff < 0) return 'overdue';
-  if (diff <= 3) return 'urgent';
-  return 'normal';
+  return diff >= 0 && diff <= 3;
 }
 
-// Render urgent tasks
-function renderUrgentTasks() {
-  const urgentList = document.getElementById('urgentList');
-  urgentList.innerHTML = '';
-
-  const urgent = tasks.filter(t => {
-    const status = getTimelineStatus(t.dueDate, t.status);
-    return status === 'overdue' || status === 'urgent';
-  });
-
-  if (urgent.length === 0) {
-    urgentList.innerHTML = '<p style="color: #999; font-size: 14px;">暫無逾期或即將到期的事項</p>';
-    return;
-  }
-
-  urgent.forEach(task => {
-    const status = getTimelineStatus(task.dueDate, task.status);
-    const item = document.createElement('div');
-    item.className = 'urgent-item ' + status;
-    
-    const icon = status === 'overdue' ? '🔴' : '🟡';
-    item.textContent = icon + ' ' + task.name + ' - ' + task.dueDate;
-    
-    urgentList.appendChild(item);
-  });
+// 格式化日期
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  const options = { month: 'numeric', day: 'numeric' };
+  return date.toLocaleDateString('zh-TW', options);
 }
 
-// Populate task list
-function populateTaskList(taskList) {
-  const tbody = document.getElementById('taskList');
-  tbody.innerHTML = '';
-
-  taskList.forEach(task => {
-    const row = document.createElement('tr');
-    
-    const timeline = getTimelineStatus(task.dueDate, task.status);
-    const timelineClass = timeline === 'overdue' ? 'timeline overdue' :
-                         timeline === 'urgent' ? 'timeline urgent' : '';
-    const timelineLabel = timeline === 'overdue' ? '🔴 ' + task.dueDate :
-                         timeline === 'urgent' ? '🟡 ' + task.dueDate : task.dueDate;
-
-    row.innerHTML = `
-      <td><strong>${task.name}</strong></td>
-      <td>${task.assignee}</td>
-      <td><span class="priority ${getPriorityClass(task.priority)}">${task.priority}</span></td>
-      <td><span class="status ${getStatusClass(task.status)}">${task.status}</span></td>
-      <td><span class="${timelineClass}">${timelineLabel}</span></td>
-    `;
-
-    row.style.cursor = 'pointer';
-    row.addEventListener('click', () => showModal(task));
-    
-    tbody.appendChild(row);
-  });
+// 計算逾期天數
+function getOverdueDays(dueDate) {
+  const due = new Date(dueDate);
+  const diff = Math.floor((today - due) / (1000 * 60 * 60 * 24));
+  return diff;
 }
 
-// Get priority class
+// 取得優先級 CSS 類別
 function getPriorityClass(priority) {
   const map = {
-    '高': 'high',
-    '中': 'medium',
-    '低': 'low'
+    '高': 'priority-high',
+    '中': 'priority-medium',
+    '低': 'priority-low'
   };
   return map[priority] || '';
 }
 
-// Get status class
+// 取得狀態 CSS 類別
 function getStatusClass(status) {
   const map = {
-    '待處理': 'pending',
-    '進行中': 'in-progress',
-    '已完成': 'completed'
+    '待處理': 'status-pending',
+    '進行中': 'status-inprogress',
+    '等待他人': 'status-waiting',
+    '已完成': 'status-completed'
   };
   return map[status] || '';
 }
 
-// Show modal with task details
-function showModal(task) {
-  document.getElementById('modalTitle').textContent = task.name;
-  document.getElementById('modalAssignee').textContent = task.assignee;
-  document.getElementById('modalPriority').textContent = task.priority;
-  document.getElementById('modalStatus').textContent = task.status;
-  document.getElementById('modalDueDate').textContent = task.dueDate;
-  document.getElementById('modalCreatedDate').textContent = task.createdDate;
-  document.getElementById('modalDescription').textContent = task.description;
-
-  document.getElementById('modal').classList.remove('hidden');
+// 取得專案名稱（依 ID）
+function getProjectName(projectId) {
+  const project = state.projects.find(p => p.id === projectId);
+  return project ? project.name : '未知專案';
 }
 
-// Hide modal
-function hideModal() {
-  document.getElementById('modal').classList.add('hidden');
+// 取得功能名稱（依 ID）
+function getFeatureName(featureId) {
+  const feature = state.features.find(f => f.id === featureId);
+  return feature ? feature.name : '未知功能';
 }
 
-// Switch between views
-function switchView(viewName) {
-  const views = document.querySelectorAll('.view');
-  views.forEach(view => view.classList.add('hidden'));
+// 取得功能（依專案 ID）
+function getFeaturesByProject(projectId) {
+  return state.features.filter(f => f.projectId === projectId);
+}
 
-  if (viewName === 'overview') {
-    document.getElementById('overview').classList.remove('hidden');
-  } else if (viewName === 'list') {
-    document.getElementById('list').classList.remove('hidden');
+// ===== 計算函數 =====
+
+// 取得逾期事項
+function getOverdueTasks() {
+  return state.tasks.filter(t => isOverdue(t.dueDate, t.status));
+}
+
+// 取得今日需要處理的事項
+function getTodayTasks() {
+  return state.tasks.filter(t => {
+    if (t.status === '已完成') return false;
+    return isToday(t.dueDate) || (t.nextAction && isToday(t.dueDate));
+  });
+}
+
+// 取得等待他人的事項
+function getWaitingTasks() {
+  return state.tasks.filter(t => t.status === '等待他人' && t.waiting && t.waiting.isWaiting);
+}
+
+// 依等待對象分組
+function groupWaitingByTarget() {
+  const groups = {};
+  getWaitingTasks().forEach(task => {
+    const target = task.waiting.waitingFor || '其他';
+    if (!groups[target]) {
+      groups[target] = [];
+    }
+    groups[target].push(task);
+  });
+  return groups;
+}
+
+// 計算專案進度（依功能完成率）
+function calculateProjectProgress(projectId) {
+  const projectFeatures = state.features.filter(f => f.projectId === projectId);
+  if (projectFeatures.length === 0) return 0;
+
+  const completedFeatures = projectFeatures.filter(f => f.status === '已完成').length;
+  return Math.round((completedFeatures / projectFeatures.length) * 100);
+}
+
+// ===== 渲染函數 =====
+
+// 渲染首頁
+function renderTodayView() {
+  renderOverdueTasks();
+  renderTodayTasks();
+  renderWaitingTasks();
+  renderProjectProgress();
+}
+
+// 渲染逾期事項
+function renderOverdueTasks() {
+  const overdueTasks = getOverdueTasks();
+  const overdueList = document.getElementById('overdueList');
+  const overdueCount = document.getElementById('overdueCount');
+
+  overdueCount.textContent = overdueTasks.length;
+
+  if (overdueTasks.length === 0) {
+    overdueList.innerHTML = '<p style="color: #999; font-size: 13px;">暫無逾期事項</p>';
+    return;
   }
+
+  overdueList.innerHTML = overdueTasks.map(task => `
+    <div class="task-item" onclick="handleTaskClick('${task.id}')">
+      <input type="checkbox" class="task-checkbox">
+      <div class="task-content">
+        <div class="task-header">
+          <span class="task-title">${task.name}</span>
+          <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
+          <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+        </div>
+        <div class="task-meta">
+          ${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)} 
+          | 期限: ${formatDate(task.dueDate)} (逾期 ${getOverdueDays(task.dueDate)} 天)
+        </div>
+        <div class="task-next-action">Next: ${task.nextAction || '無'}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
-// Filter tasks by status
-function filterTasks(status) {
-  const filtered = status === 'all' ? tasks : tasks.filter(t => t.status === status);
+// 渲染今日需要處理
+function renderTodayTasks() {
+  const todayTasks = getTodayTasks();
+  const todayList = document.getElementById('todayList');
+  const todayCount = document.getElementById('todayCount');
 
-  populateTaskList(filtered);
+  todayCount.textContent = todayTasks.length;
 
-  const counts = {
-    'all': tasks.length,
-    '待處理': tasks.filter(t => t.status === '待處理').length,
-    '進行中': tasks.filter(t => t.status === '進行中').length,
-    '已完成': tasks.filter(t => t.status === '已完成').length
-  };
+  if (todayTasks.length === 0) {
+    todayList.innerHTML = '<p style="color: #999; font-size: 13px;">今天暫無待處理事項</p>';
+    return;
+  }
 
-  const statusText = status === 'all' ? '全部事項' : status;
-  document.getElementById('filterText').textContent = `顯示 ${counts[status]} 筆${statusText}`;
+  todayList.innerHTML = todayTasks.map(task => `
+    <div class="task-item" onclick="handleTaskClick('${task.id}')">
+      <input type="checkbox" class="task-checkbox">
+      <div class="task-content">
+        <div class="task-header">
+          <span class="task-title">${task.name}</span>
+          <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
+          <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+        </div>
+        <div class="task-meta">
+          ${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)}
+          ${isToday(task.dueDate) ? '| 期限: 今天' : ''}
+        </div>
+        <div class="task-next-action">Next: ${task.nextAction || '無'}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
-// Initialize event listeners
+// 渲染等待他人
+function renderWaitingTasks() {
+  const waitingGroups = groupWaitingByTarget();
+  const waitingList = document.getElementById('waitingList');
+  const waitingCount = document.getElementById('waitingCount');
+
+  const totalWaiting = getWaitingTasks().length;
+  waitingCount.textContent = totalWaiting;
+
+  if (totalWaiting === 0) {
+    waitingList.innerHTML = '<p style="color: #999; font-size: 13px;">暫無等待他人的事項</p>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(waitingGroups).forEach(([target, tasks]) => {
+    html += `<div class="waiting-group">
+      <div class="waiting-group-title">等待 ${target} (${tasks.length} 件)</div>`;
+    
+    tasks.forEach(task => {
+      const nextFollowUp = task.waiting.nextFollowUpDate ? formatDate(task.waiting.nextFollowUpDate) : '未設定';
+      html += `
+        <div class="waiting-item" onclick="handleTaskClick('${task.id}')">
+          <div><strong>${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)}</strong></div>
+          <div>${task.name}</div>
+          <div class="waiting-reason">等待原因: ${task.waiting.reason}</div>
+          <div class="waiting-reason">下一追蹤: ${nextFollowUp}</div>
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  });
+
+  waitingList.innerHTML = html;
+}
+
+// 渲染專案進度
+function renderProjectProgress() {
+  const progressList = document.getElementById('projectProgressList');
+
+  progressList.innerHTML = state.projects.map(project => {
+    const progress = calculateProjectProgress(project.id);
+    const features = state.features.filter(f => f.projectId === project.id);
+    const completedFeatures = features.filter(f => f.status === '已完成').length;
+
+    return `
+      <div class="progress-item">
+        <div class="progress-info">
+          <div class="progress-name">${project.name}</div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${progress}%"></div>
+          </div>
+          <div class="progress-text">${progress}% 完成</div>
+          <div class="progress-count">${completedFeatures} / ${features.length} 功能完成</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== 事件監聽 =====
+
 function initializeEventListeners() {
-  // View all button
-  document.getElementById('viewAllBtn').addEventListener('click', () => {
-    switchView('list');
-    filterTasks('all');
-    updateFilterButtons('all');
+  // FAB 按鈕
+  const fabAdd = document.getElementById('fabAdd');
+  const fabMenu = document.getElementById('fabMenu');
+
+  fabAdd.addEventListener('click', () => {
+    fabMenu.classList.toggle('hidden');
   });
 
-  // Back button
-  document.getElementById('backBtn').addEventListener('click', () => {
-    switchView('overview');
-  });
+  // FAB 菜單項
+  document.getElementById('addProjectBtn').addEventListener('click', openAddProjectModal);
+  document.getElementById('addFeatureBtn').addEventListener('click', openAddFeatureModal);
+  document.getElementById('addTaskBtn').addEventListener('click', openAddTaskModal);
 
-  // Filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const filter = btn.dataset.filter;
-      filterTasks(filter);
-      updateFilterButtons(filter);
+  // 模態窗口關閉
+  document.querySelectorAll('.modal-close').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const modal = e.target.closest('.modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
     });
   });
 
-  // Modal close button
-  document.getElementById('closeModal').addEventListener('click', hideModal);
-
-  // Modal overlay click
-  document.querySelector('.modal-overlay').addEventListener('click', hideModal);
-
-  // Modal content click (prevent closing when clicking content)
-  document.querySelector('.modal-content').addEventListener('click', (e) => {
-    e.stopPropagation();
+  // 模態窗口背景點擊關閉
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      const modal = e.target.closest('.modal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    });
   });
+
+  // 表單提交
+  document.getElementById('addProjectForm').addEventListener('submit', handleAddProject);
+  document.getElementById('addFeatureForm').addEventListener('submit', handleAddFeature);
+  document.getElementById('addTaskForm').addEventListener('submit', handleAddTask);
+
+  // 功能下拉聯動
+  document.getElementById('taskProjectSelect').addEventListener('change', updateFeatureSelect);
+
+  // 搜尋和篩選（暫未實現）
+  // document.getElementById('searchInput').addEventListener('input', handleSearch);
+  // document.getElementById('statusFilter').addEventListener('change', handleFilter);
 }
 
-// Update filter button active state
-function updateFilterButtons(activeFilter) {
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    if (btn.dataset.filter === activeFilter) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
+// ===== 模態操作 =====
+
+function openAddProjectModal() {
+  document.getElementById('addProjectModal').classList.remove('hidden');
+}
+
+function openAddFeatureModal() {
+  document.getElementById('addFeatureModal').classList.remove('hidden');
+}
+
+function openAddTaskModal() {
+  document.getElementById('addTaskModal').classList.remove('hidden');
+}
+
+// ===== 表單提交 =====
+
+function handleAddProject(e) {
+  e.preventDefault();
+
+  const newProject = {
+    id: 'p' + Date.now(),
+    name: document.getElementById('projectName').value,
+    description: document.getElementById('projectDescription').value,
+    status: document.getElementById('projectStatus').value,
+    startDate: document.getElementById('projectStartDate').value,
+    targetDate: document.getElementById('projectTargetDate').value,
+    notes: ''
+  };
+
+  state.projects.push(newProject);
+  document.getElementById('addProjectModal').classList.add('hidden');
+  document.getElementById('addProjectForm').reset();
+  populateProjectSelects();
+  renderTodayView();
+}
+
+function handleAddFeature(e) {
+  e.preventDefault();
+
+  const newFeature = {
+    id: 'f' + Date.now(),
+    projectId: document.getElementById('featureProjectSelect').value,
+    name: document.getElementById('featureName').value,
+    description: document.getElementById('featureDescription').value,
+    status: document.getElementById('featureStatus').value,
+    priority: document.getElementById('featurePriority').value,
+    targetDate: document.getElementById('featureTargetDate').value,
+    assignee: document.getElementById('featureAssignee').value
+  };
+
+  state.features.push(newFeature);
+  document.getElementById('addFeatureModal').classList.add('hidden');
+  document.getElementById('addFeatureForm').reset();
+  populateProjectSelects();
+  renderTodayView();
+}
+
+function handleAddTask(e) {
+  e.preventDefault();
+
+  const newTask = {
+    id: 't' + Date.now(),
+    projectId: document.getElementById('taskProjectSelect').value,
+    featureId: document.getElementById('taskFeatureSelect').value,
+    name: document.getElementById('taskName').value,
+    priority: document.getElementById('taskPriority').value,
+    status: document.getElementById('taskStatus').value,
+    dueDate: document.getElementById('taskDueDate').value,
+    nextAction: document.getElementById('taskNextAction').value,
+    assignee: document.getElementById('taskAssignee').value,
+    waiting: null,
+    notes: '',
+    workLogs: []
+  };
+
+  state.tasks.push(newTask);
+  document.getElementById('addTaskModal').classList.add('hidden');
+  document.getElementById('addTaskForm').reset();
+  populateProjectSelects();
+  renderTodayView();
+}
+
+// ===== 填充下拉選單 =====
+
+function populateProjectSelects() {
+  const projectSelects = [
+    document.getElementById('featureProjectSelect'),
+    document.getElementById('taskProjectSelect'),
+    document.getElementById('projectFilter')
+  ];
+
+  projectSelects.forEach(select => {
+    if (select) {
+      select.innerHTML = state.projects.map(p => `
+        <option value="${p.id}">${p.name}</option>
+      `).join('');
     }
   });
+
+  updateFeatureSelect();
+}
+
+function updateFeatureSelect() {
+  const projectId = document.getElementById('taskProjectSelect').value;
+  const featureSelect = document.getElementById('taskFeatureSelect');
+
+  const features = getFeaturesByProject(projectId);
+  featureSelect.innerHTML = features.map(f => `
+    <option value="${f.id}">${f.name}</option>
+  `).join('');
+}
+
+// ===== 點擊處理 =====
+
+function handleTaskClick(taskId) {
+  console.log('點擊任務:', taskId);
+  // Task 4 時實現詳細頁面
 }

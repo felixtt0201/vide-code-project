@@ -3,134 +3,236 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>專案管理追蹤事項</title>
+  <title>PM 工作管理系統</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <!-- Header -->
   <header class="header">
     <div class="container">
-      <h1>專案管理追蹤事項</h1>
+      <h1>PM 工作管理系統</h1>
+      <p class="subtitle">今天是 <span id="todayDate"></span></p>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="main">
-    <!-- Overview View -->
-    <section id="overview" class="view">
+    <!-- Today View -->
+    <section id="todayView" class="view">
       <div class="container">
-        <!-- Project Info Card -->
-        <div class="card project-info">
-          <h2>專案資訊</h2>
-          <p><strong>名稱：</strong> <span id="projectName"></span></p>
-          <p><strong>建立日期：</strong> <span id="projectCreated"></span></p>
-          <p><strong>預計完成：</strong> <span id="projectTarget"></span></p>
-        </div>
+        
+        <!-- Overdue Section -->
+        <section class="card overdue-section">
+          <h2>🔴 逾期事項 <span class="badge" id="overdueCount">0</span></h2>
+          <div id="overdueList" class="task-list"></div>
+        </section>
 
-        <!-- Progress Card -->
-        <div class="card progress-card">
-          <h2>專案進度</h2>
-          <div class="progress-bar">
-            <div id="progressFill" class="progress-fill"></div>
+        <!-- Today Tasks Section -->
+        <section class="card today-section">
+          <h2>🟠 今日需要處理 <span class="badge" id="todayCount">0</span></h2>
+          <div id="todayList" class="task-list"></div>
+        </section>
+
+        <!-- Waiting Section -->
+        <section class="card waiting-section">
+          <h2>🔵 等待他人 <span class="badge" id="waitingCount">0</span></h2>
+          <div id="waitingList" class="waiting-group-list"></div>
+        </section>
+
+        <!-- Project Progress Section -->
+        <section class="card progress-section">
+          <h2>📊 專案進度</h2>
+          <div id="projectProgressList" class="progress-list"></div>
+        </section>
+
+        <!-- All Tasks Section (Hidden) -->
+        <section id="allTasksView" class="card hidden">
+          <h2>所有追蹤事項</h2>
+          <div class="search-filter-bar">
+            <input type="text" id="searchInput" placeholder="搜尋事項名稱...">
+            <select id="statusFilter" class="filter-select">
+              <option value="">全部狀態</option>
+              <option value="待處理">待處理</option>
+              <option value="進行中">進行中</option>
+              <option value="等待他人">等待他人</option>
+              <option value="已完成">已完成</option>
+            </select>
+            <select id="priorityFilter" class="filter-select">
+              <option value="">全部優先級</option>
+              <option value="高">高</option>
+              <option value="中">中</option>
+              <option value="低">低</option>
+            </select>
+            <select id="projectFilter" class="filter-select">
+              <option value="">全部專案</option>
+            </select>
           </div>
-          <p id="progressText" class="progress-text"></p>
-        </div>
+          <div id="allTasksList" class="task-list"></div>
+        </section>
 
-        <!-- Status Statistics -->
-        <div class="card status-stats">
-          <h2>狀態統計</h2>
-          <div class="stats-grid">
-            <div class="stat">
-              <div class="stat-count" id="countPending">0</div>
-              <div class="stat-label">待處理</div>
-            </div>
-            <div class="stat">
-              <div class="stat-count" id="countInProgress">0</div>
-              <div class="stat-label">進行中</div>
-            </div>
-            <div class="stat">
-              <div class="stat-count" id="countCompleted">0</div>
-              <div class="stat-label">已完成</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Priority Statistics -->
-        <div class="card priority-stats">
-          <h2>優先級分佈</h2>
-          <div class="stats-grid">
-            <div class="stat">
-              <div class="stat-count" id="countHigh">0</div>
-              <div class="stat-label">高優先級</div>
-            </div>
-            <div class="stat">
-              <div class="stat-count" id="countMedium">0</div>
-              <div class="stat-label">中優先級</div>
-            </div>
-            <div class="stat">
-              <div class="stat-count" id="countLow">0</div>
-              <div class="stat-label">低優先級</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Urgent Tasks -->
-        <div class="card urgent-tasks">
-          <h2>即將到期事項</h2>
-          <div id="urgentList"></div>
-        </div>
-
-        <button id="viewAllBtn" class="btn btn-primary">查看所有事項</button>
-      </div>
-    </section>
-
-    <!-- List View -->
-    <section id="list" class="view hidden">
-      <div class="container">
-        <button id="backBtn" class="btn btn-secondary">返回總覽</button>
-
-        <!-- Filter Buttons -->
-        <div class="filter-buttons">
-          <button class="filter-btn active" data-filter="all">全部</button>
-          <button class="filter-btn" data-filter="待處理">待處理</button>
-          <button class="filter-btn" data-filter="進行中">進行中</button>
-          <button class="filter-btn" data-filter="已完成">已完成</button>
-        </div>
-
-        <p id="filterText" class="filter-text">顯示所有事項</p>
-
-        <!-- Tasks Table -->
-        <table class="table">
-          <thead>
-            <tr>
-              <th>事項</th>
-              <th>負責人</th>
-              <th>優先級</th>
-              <th>狀態</th>
-              <th>期限</th>
-            </tr>
-          </thead>
-          <tbody id="taskList"></tbody>
-        </table>
       </div>
     </section>
   </main>
 
-  <!-- Modal -->
-  <div id="modal" class="modal hidden">
+  <!-- Floating Action Buttons -->
+  <div class="fab-container">
+    <button id="fabAdd" class="fab-button" title="新增">+</button>
+    <div id="fabMenu" class="fab-menu hidden">
+      <button id="addProjectBtn" class="fab-menu-item" data-action="addProject">+ 新增專案</button>
+      <button id="addFeatureBtn" class="fab-menu-item" data-action="addFeature">+ 新增功能</button>
+      <button id="addTaskBtn" class="fab-menu-item" data-action="addTask">+ 新增追蹤事項</button>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  
+  <!-- Add Project Modal -->
+  <div id="addProjectModal" class="modal hidden">
     <div class="modal-overlay"></div>
     <div class="modal-content">
-      <button id="closeModal" class="btn-close">×</button>
-      <h2 id="modalTitle"></h2>
-      <div class="modal-body">
-        <p><strong>負責人：</strong> <span id="modalAssignee"></span></p>
-        <p><strong>優先級：</strong> <span id="modalPriority"></span></p>
-        <p><strong>狀態：</strong> <span id="modalStatus"></span></p>
-        <p><strong>預計完成日期：</strong> <span id="modalDueDate"></span></p>
-        <p><strong>建立日期：</strong> <span id="modalCreatedDate"></span></p>
-        <p><strong>備註：</strong></p>
-        <p id="modalDescription"></p>
-      </div>
+      <button class="modal-close">×</button>
+      <h2>新增專案</h2>
+      <form id="addProjectForm">
+        <div class="form-group">
+          <label>專案名稱 *</label>
+          <input type="text" id="projectName" required>
+        </div>
+        <div class="form-group">
+          <label>專案描述</label>
+          <textarea id="projectDescription"></textarea>
+        </div>
+        <div class="form-group">
+          <label>狀態 *</label>
+          <select id="projectStatus" required>
+            <option value="未開始">未開始</option>
+            <option value="進行中">進行中</option>
+            <option value="暫停">暫停</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>開始日期</label>
+          <input type="date" id="projectStartDate">
+        </div>
+        <div class="form-group">
+          <label>預計完成日期</label>
+          <input type="date" id="projectTargetDate">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">保存</button>
+          <button type="button" class="btn-secondary modal-close">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Feature Modal -->
+  <div id="addFeatureModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+      <button class="modal-close">×</button>
+      <h2>新增功能</h2>
+      <form id="addFeatureForm">
+        <div class="form-group">
+          <label>所屬專案 *</label>
+          <select id="featureProjectSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label>功能名稱 *</label>
+          <input type="text" id="featureName" required>
+        </div>
+        <div class="form-group">
+          <label>功能描述</label>
+          <textarea id="featureDescription"></textarea>
+        </div>
+        <div class="form-group">
+          <label>狀態 *</label>
+          <select id="featureStatus" required>
+            <option value="未開始">未開始</option>
+            <option value="進行中">進行中</option>
+            <option value="等待他人">等待他人</option>
+            <option value="已完成">已完成</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>優先級</label>
+          <select id="featurePriority">
+            <option value="低">低</option>
+            <option value="中">中</option>
+            <option value="高">高</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>預計完成日期</label>
+          <input type="date" id="featureTargetDate">
+        </div>
+        <div class="form-group">
+          <label>負責人</label>
+          <input type="text" id="featureAssignee">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">保存</button>
+          <button type="button" class="btn-secondary modal-close">取消</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div id="addTaskModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-lg">
+      <button class="modal-close">×</button>
+      <h2>新增追蹤事項</h2>
+      <form id="addTaskForm">
+        <div class="form-group">
+          <label>所屬專案 *</label>
+          <select id="taskProjectSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label>所屬功能 *</label>
+          <select id="taskFeatureSelect" required></select>
+        </div>
+        <div class="form-group">
+          <label>事項名稱 *</label>
+          <input type="text" id="taskName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>優先級</label>
+            <select id="taskPriority">
+              <option value="低">低</option>
+              <option value="中">中</option>
+              <option value="高">高</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>狀態</label>
+            <select id="taskStatus">
+              <option value="待處理">待處理</option>
+              <option value="進行中">進行中</option>
+              <option value="等待他人">等待他人</option>
+              <option value="已完成">已完成</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>預計完成日期</label>
+          <input type="date" id="taskDueDate">
+        </div>
+        <div class="form-group">
+          <label>Next Action</label>
+          <textarea id="taskNextAction" placeholder="下一步實際要做什麼..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>負責人</label>
+          <input type="text" id="taskAssignee">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">保存</button>
+          <button type="button" class="btn-secondary modal-close">取消</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -139,135 +241,71 @@
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const project = {
-      name: '社群平台升級專案',
-      createdDate: '2026-06-01',
-      targetDate: '2026-12-31',
-      progress: 65
+    // 模擬資料
+    const mockData = {
+      projects: [
+        {
+          id: 'p1',
+          name: 'P2E 專案',
+          description: 'P2E 平台升級',
+          status: '進行中',
+          startDate: '2026-06-01',
+          targetDate: '2026-12-31',
+          notes: '核心專案'
+        },
+        {
+          id: 'p2',
+          name: 'EW50 專案',
+          description: 'EW50 系統開發',
+          status: '進行中',
+          startDate: '2026-07-01',
+          targetDate: '2026-11-30',
+          notes: '子專案'
+        },
+        {
+          id: 'p3',
+          name: '新功能探索',
+          description: '探索新的功能需求',
+          status: '未開始',
+          startDate: '2026-09-01',
+          targetDate: '2026-12-31',
+          notes: '待啟動'
+        }
+      ],
+      features: [
+        { id: 'f1', projectId: 'p1', name: 'Change Password', description: '密碼變更功能', status: '已完成', priority: '中', targetDate: '2026-08-05', assignee: 'Alice' },
+        { id: 'f2', projectId: 'p1', name: 'MQTT', description: 'MQTT 整合', status: '進行中', priority: '高', targetDate: '2026-08-20', assignee: 'Bob' },
+        { id: 'f3', projectId: 'p1', name: 'Delete Function', description: '刪除功能', status: '進行中', priority: '高', targetDate: '2026-08-25', assignee: 'Hao' },
+        { id: 'f4', projectId: 'p2', name: 'Image Recognition', description: '影像辨識', status: '進行中', priority: '高', targetDate: '2026-09-15', assignee: 'Carol' },
+        { id: 'f5', projectId: 'p2', name: 'Data Export', description: '資料匯出', status: '待處理', priority: '中', targetDate: '2026-09-01', assignee: 'David' },
+        { id: 'f6', projectId: 'p2', name: 'API Integration', description: 'API 整合', status: '等待他人', priority: '中', targetDate: '2026-09-10', assignee: 'Eve' },
+        { id: 'f7', projectId: 'p3', name: 'Mobile App', description: '行動應用', status: '未開始', priority: '低', targetDate: '2026-11-01', assignee: 'Frank' },
+        { id: 'f8', projectId: 'p3', name: 'Dashboard', description: '數據儀表板', status: '未開始', priority: '低', targetDate: '2026-10-15', assignee: 'Grace' }
+      ],
+      tasks: [
+        { id: 't1', projectId: 'p1', featureId: 'f2', name: '確認 MQTT 規格', priority: '高', status: '待處理', dueDate: '2026-08-12', nextAction: '詢問客戶規格需求', assignee: 'Bob', waiting: null, notes: '客戶已回覆初版', workLogs: [] },
+        { id: 't2', projectId: 'p1', featureId: 'f2', name: 'RD 開發', priority: '高', status: '進行中', dueDate: '2026-08-18', nextAction: '確認開發進度', assignee: 'Bob', waiting: null, notes: '開發中', workLogs: [] },
+        { id: 't3', projectId: 'p1', featureId: 'f3', name: 'RD 調整刪除邏輯', priority: '高', status: '進行中', dueDate: '2026-08-20', nextAction: '跟進 RD 進度', assignee: 'Hao', waiting: null, notes: '等待 RD 反饋', workLogs: [] },
+        { id: 't4', projectId: 'p1', featureId: 'f3', name: '客戶驗收', priority: '高', status: '等待他人', dueDate: '2026-08-14', nextAction: '詢問客戶測試結果', assignee: 'Hao', waiting: { isWaiting: true, waitingFor: '客戶', reason: '等待客戶完成測試確認', nextFollowUpDate: '2026-08-14' }, notes: '等待客戶反饋', workLogs: [] },
+        { id: 't5', projectId: 'p2', featureId: 'f4', name: '演算法開發', priority: '高', status: '進行中', dueDate: '2026-09-10', nextAction: '確認模型效能', assignee: 'Carol', waiting: null, notes: '進行中', workLogs: [] },
+        { id: 't6', projectId: 'p2', featureId: 'f4', name: '測試站驗證', priority: '高', status: '待處理', dueDate: '2026-09-12', nextAction: '準備測試資料', assignee: 'Carol', waiting: null, notes: '待開始', workLogs: [] },
+        { id: 't7', projectId: 'p2', featureId: 'f5', name: 'CSV 格式定義', priority: '中', status: '進行中', dueDate: '2026-09-05', nextAction: '確認格式細節', assignee: 'David', waiting: null, notes: '與客戶討論中', workLogs: [] },
+        { id: 't8', projectId: 'p2', featureId: 'f6', name: '文件整理', priority: '中', status: '等待他人', dueDate: '2026-08-25', nextAction: '取得 API 文件', assignee: 'Eve', waiting: { isWaiting: true, waitingFor: '第三方廠商', reason: '等待 API 文件', nextFollowUpDate: '2026-08-18' }, notes: '等待廠商提供', workLogs: [] },
+        { id: 't9', projectId: 'p1', featureId: 'f1', name: '部署上線', priority: '中', status: '已完成', dueDate: '2026-08-05', nextAction: '', assignee: 'Alice', waiting: null, notes: '已完成', workLogs: [] },
+        { id: 't10', projectId: 'p1', featureId: 'f2', name: '測試驗證', priority: '中', status: '等待他人', dueDate: '2026-08-22', nextAction: '確認客戶測試進度', assignee: 'Bob', waiting: { isWaiting: true, waitingFor: '客戶', reason: '等待客戶測試反饋', nextFollowUpDate: '2026-08-16' }, notes: '等待中', workLogs: [] },
+        { id: 't11', projectId: 'p2', featureId: 'f4', name: 'UI 優化', priority: '低', status: '待處理', dueDate: '2026-09-20', nextAction: '收集使用者反饋', assignee: 'Carol', waiting: null, notes: '暫時延後', workLogs: [] },
+        { id: 't12', projectId: 'p2', featureId: 'f5', name: '效能測試', priority: '低', status: '待處理', dueDate: '2026-09-18', nextAction: '準備測試計畫', assignee: 'David', waiting: null, notes: '後續執行', workLogs: [] },
+      ]
     };
 
-    const tasks = [
-      {
-        id: 1,
-        name: '完成首頁設計稿',
-        description: '設計首頁的高保真原型，包括導航、hero 區域、功能卡片區塊。',
-        assignee: '王小明',
-        priority: '高',
-        status: '已完成',
-        dueDate: '2026-08-05',
-        createdDate: '2026-07-15'
-      },
-      {
-        id: 2,
-        name: '前端框架選型評估',
-        description: '評估 React、Vue、Svelte 等框架的適用性，撰寫技術決策文檔。',
-        assignee: '李芳美',
-        priority: '高',
-        status: '進行中',
-        dueDate: '2026-08-10',
-        createdDate: '2026-07-20'
-      },
-      {
-        id: 3,
-        name: '資料庫架構設計',
-        description: '設計用戶、內容、互動等核心表結構，完成 ER 圖。',
-        assignee: '陳建宏',
-        priority: '高',
-        status: '待處理',
-        dueDate: '2026-08-15',
-        createdDate: '2026-07-22'
-      },
-      {
-        id: 4,
-        name: 'API 文檔編寫',
-        description: '撰寫完整的 REST API 文檔，包括端點、參數、範例。',
-        assignee: '王小明',
-        priority: '中',
-        status: '待處理',
-        dueDate: '2026-08-20',
-        createdDate: '2026-07-25'
-      },
-      {
-        id: 5,
-        name: '使用者認證系統開發',
-        description: '實現登入、登出、密碼重置等認證功能，整合 OAuth 2.0。',
-        assignee: '李芳美',
-        priority: '中',
-        status: '進行中',
-        dueDate: '2026-08-25',
-        createdDate: '2026-07-18'
-      },
-      {
-        id: 6,
-        name: '內容發布流程測試',
-        description: '測試內容從草稿到發布的完整流程，確保無異常。',
-        assignee: '陳建宏',
-        priority: '中',
-        status: '待處理',
-        dueDate: '2026-08-18',
-        createdDate: '2026-07-28'
-      },
-      {
-        id: 7,
-        name: '搜尋功能優化',
-        description: '改進全文搜尋算法，提升查詢速度和相關性。',
-        assignee: '王小明',
-        priority: '低',
-        status: '待處理',
-        dueDate: '2026-09-05',
-        createdDate: '2026-08-01'
-      },
-      {
-        id: 8,
-        name: '效能監控儀表板',
-        description: '開發 Grafana 儀表板監控系統效能、錯誤率、延遲等指標。',
-        assignee: '李芳美',
-        priority: '低',
-        status: '已完成',
-        dueDate: '2026-08-12',
-        createdDate: '2026-07-16'
-      },
-      {
-        id: 9,
-        name: '行動版本適配',
-        description: '確保所有頁面在手機、平板上的顯示效果，修正響應式問題。',
-        assignee: '陳建宏',
-        priority: '高',
-        status: '待處理',
-        dueDate: '2026-08-22',
-        createdDate: '2026-08-02'
-      },
-      {
-        id: 10,
-        name: '安全漏洞掃描與修復',
-        description: '進行 SQL 注入、XSS、CSRF 等安全審計，修復發現的漏洞。',
-        assignee: '王小明',
-        priority: '高',
-        status: '進行中',
-        dueDate: '2026-08-28',
-        createdDate: '2026-07-30'
-      },
-      {
-        id: 11,
-        name: '文檔站點建立',
-        description: '建立技術文檔網站，包括 API、架構、貢獻指南等。',
-        assignee: '李芳美',
-        priority: '中',
-        status: '已完成',
-        dueDate: '2026-08-08',
-        createdDate: '2026-07-24'
-      },
-      {
-        id: 12,
-        name: '用戶回饋系統開發',
-        description: '實現用戶評論、評分、問題回報等回饋機制。',
-        assignee: '陳建宏',
-        priority: '低',
-        status: '待處理',
-        dueDate: '2026-09-10',
-        createdDate: '2026-08-03'
-      }
-    ];
+    // 應用狀態
+    const state = {
+      projects: mockData.projects,
+      features: mockData.features,
+      tasks: mockData.tasks,
+      currentFilter: 'all',
+      selectedProject: null
+    };
   </script>
 
   <script src="./app.js"></script>
