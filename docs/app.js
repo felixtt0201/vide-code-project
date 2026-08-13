@@ -18,6 +18,11 @@ function renderOverview() {
   document.getElementById('countInProgress').textContent = counts.inProgress;
   document.getElementById('countCompleted').textContent = counts.completed;
 
+  const priorityCounts = getPriorityCounts();
+  document.getElementById('countHigh').textContent = priorityCounts.high;
+  document.getElementById('countMedium').textContent = priorityCounts.medium;
+  document.getElementById('countLow').textContent = priorityCounts.low;
+
   renderUrgentTasks();
 }
 
@@ -90,13 +95,15 @@ function populateTaskList(taskList) {
     const timeline = getTimelineStatus(task.dueDate, task.status);
     const timelineClass = timeline === 'overdue' ? 'timeline overdue' :
                          timeline === 'urgent' ? 'timeline urgent' : '';
+    const timelineLabel = timeline === 'overdue' ? '🔴 ' + task.dueDate :
+                         timeline === 'urgent' ? '🟡 ' + task.dueDate : task.dueDate;
 
     row.innerHTML = `
       <td><strong>${task.name}</strong></td>
       <td>${task.assignee}</td>
       <td><span class="priority ${getPriorityClass(task.priority)}">${task.priority}</span></td>
       <td><span class="status ${getStatusClass(task.status)}">${task.status}</span></td>
-      <td><span class="${timelineClass}">${task.dueDate}</span></td>
+      <td><span class="${timelineClass}">${timelineLabel}</span></td>
     `;
 
     row.style.cursor = 'pointer';
