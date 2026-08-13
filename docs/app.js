@@ -151,27 +151,34 @@ function renderOverdueTasks() {
   overdueCount.textContent = overdueTasks.length;
 
   if (overdueTasks.length === 0) {
-    overdueList.innerHTML = '<p style="color: #999; font-size: 13px;">暫無逾期事項</p>';
+    overdueList.innerHTML = '<p style="color: #999; font-size: 13px; text-align: center; padding: 20px;">暫無逾期事項</p>';
     return;
   }
 
-  overdueList.innerHTML = overdueTasks.map(task => `
-    <div class="task-item" onclick="handleTaskClick('${task.id}')">
-      <input type="checkbox" class="task-checkbox">
-      <div class="task-content">
-        <div class="task-header">
-          <span class="task-title">${task.name}</span>
-          <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
-          <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+  overdueList.innerHTML = overdueTasks.map(task => {
+    const overdueDays = getOverdueDays(task.dueDate);
+    const projectName = getProjectName(task.projectId);
+    const featureName = getFeatureName(task.featureId);
+    return `
+      <div class="task-item" onclick="handleTaskClick('${task.id}')">
+        <input type="checkbox" class="task-checkbox">
+        <div class="task-content">
+          <div class="task-header">
+            <span class="task-title">${task.name}</span>
+            <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
+            <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+            <span class="overdue-badge">逾期 ${overdueDays} 天</span>
+          </div>
+          <div class="task-meta">
+            <strong>${projectName}</strong> / ${featureName}
+            | 期限: ${formatDate(task.dueDate)}
+            ${task.assignee ? ' | 負責人: ' + task.assignee : ''}
+          </div>
+          ${task.nextAction ? '<div class="task-next-action">Next: ' + task.nextAction + '</div>' : ''}
         </div>
-        <div class="task-meta">
-          ${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)} 
-          | 期限: ${formatDate(task.dueDate)} (逾期 ${getOverdueDays(task.dueDate)} 天)
-        </div>
-        <div class="task-next-action">Next: ${task.nextAction || '無'}</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // 渲染今日需要處理
@@ -183,27 +190,32 @@ function renderTodayTasks() {
   todayCount.textContent = todayTasks.length;
 
   if (todayTasks.length === 0) {
-    todayList.innerHTML = '<p style="color: #999; font-size: 13px;">今天暫無待處理事項</p>';
+    todayList.innerHTML = '<p style="color: #999; font-size: 13px; text-align: center; padding: 20px;">今天暫無待處理事項</p>';
     return;
   }
 
-  todayList.innerHTML = todayTasks.map(task => `
-    <div class="task-item" onclick="handleTaskClick('${task.id}')">
-      <input type="checkbox" class="task-checkbox">
-      <div class="task-content">
-        <div class="task-header">
-          <span class="task-title">${task.name}</span>
-          <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
-          <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+  todayList.innerHTML = todayTasks.map(task => {
+    const projectName = getProjectName(task.projectId);
+    const featureName = getFeatureName(task.featureId);
+    return `
+      <div class="task-item" onclick="handleTaskClick('${task.id}')">
+        <input type="checkbox" class="task-checkbox">
+        <div class="task-content">
+          <div class="task-header">
+            <span class="task-title">${task.name}</span>
+            <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
+            <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+          </div>
+          <div class="task-meta">
+            <strong>${projectName}</strong> / ${featureName}
+            | 期限: 今天
+            ${task.assignee ? ' | 負責人: ' + task.assignee : ''}
+          </div>
+          ${task.nextAction ? '<div class="task-next-action">Next: ' + task.nextAction + '</div>' : ''}
         </div>
-        <div class="task-meta">
-          ${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)}
-          ${isToday(task.dueDate) ? '| 期限: 今天' : ''}
-        </div>
-        <div class="task-next-action">Next: ${task.nextAction || '無'}</div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // 渲染等待他人
@@ -216,7 +228,7 @@ function renderWaitingTasks() {
   waitingCount.textContent = totalWaiting;
 
   if (totalWaiting === 0) {
-    waitingList.innerHTML = '<p style="color: #999; font-size: 13px;">暫無等待他人的事項</p>';
+    waitingList.innerHTML = '<p style="color: #999; font-size: 13px; text-align: center; padding: 20px;">暫無等待他人的事項</p>';
     return;
   }
 
@@ -227,12 +239,18 @@ function renderWaitingTasks() {
     
     tasks.forEach(task => {
       const nextFollowUp = task.waiting.nextFollowUpDate ? formatDate(task.waiting.nextFollowUpDate) : '未設定';
+      const projectName = getProjectName(task.projectId);
+      const featureName = getFeatureName(task.featureId);
       html += `
         <div class="waiting-item" onclick="handleTaskClick('${task.id}')">
-          <div><strong>${getProjectName(task.projectId)} / ${getFeatureName(task.featureId)}</strong></div>
+          <div><strong>${projectName}</strong> / ${featureName}</div>
           <div>${task.name}</div>
-          <div class="waiting-reason">等待原因: ${task.waiting.reason}</div>
-          <div class="waiting-reason">下一追蹤: ${nextFollowUp}</div>
+          <div class="waiting-reason">
+            <span style="font-weight: 500;">等待原因:</span> ${task.waiting.reason}
+          </div>
+          <div class="waiting-reason">
+            <span style="font-weight: 500;">下一追蹤:</span> ${nextFollowUp}
+          </div>
         </div>
       `;
     });
