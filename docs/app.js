@@ -329,9 +329,11 @@ function initializeEventListeners() {
   // 功能下拉聯動
   document.getElementById('taskProjectSelect').addEventListener('change', updateFeatureSelect);
 
-  // 搜尋和篩選（暫未實現）
-  // document.getElementById('searchInput').addEventListener('input', handleSearch);
-  // document.getElementById('statusFilter').addEventListener('change', handleFilter);
+  // 搜尋和篩選
+  document.getElementById('searchInput').addEventListener('input', handleSearch);
+  document.getElementById('statusFilter').addEventListener('change', handleFilter);
+  document.getElementById('priorityFilter').addEventListener('change', handleFilter);
+  document.getElementById('projectFilter').addEventListener('change', handleFilter);
 
   // Task 4：詳細頁面保存
   document.getElementById('saveDetailBtn')?.addEventListener('click', saveTaskDetail);
@@ -354,23 +356,68 @@ function initializeEventListeners() {
     }
   });
 
-  document.getElementById('addWorkLogBtn')?.addEventListener('click', () => {
-    const taskId = document.getElementById('taskDetailModal').dataset.currentTaskId;
-    const task = state.tasks.find(t => t.id === taskId);
-    if (task) {
-      const content = prompt('新增工作紀錄：');
-      if (content) {
-        if (!task.workLogs) task.workLogs = [];
-        task.workLogs.unshift({
-          date: formatDate(today.toISOString().split('T')[0]),
-          content: content,
-          notes: ''
-        });
-        openTaskDetailModal(taskId);
-        renderTodayView();
-      }
-    }
-  });
+// ===== 搜尋與篩選 =====
+
+function handleSearch() {
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = state.tasks.filter(t => t.name.toLowerCase().includes(searchTerm));
+  renderAllTasksList(filtered);
+}
+
+function handleFilter() {
+  const status = document.getElementById('statusFilter').value;
+  const priority = document.getElementById('priorityFilter').value;
+  const project = document.getElementById('projectFilter').value;
+
+  let filtered = state.tasks;
+
+  if (status) {
+    filtered = filtered.filter(t => t.status === status);
+  }
+  if (priority) {
+    filtered = filtered.filter(t => t.priority === priority);
+  }
+  if (project) {
+    filtered = filtered.filter(t => t.projectId === project);
+  }
+
+  renderAllTasksList(filtered);
+}
+
+function renderAllTasksList(tasks) {
+  const allTasksList = document.getElementById('allTasksList');
+  
+  if (tasks.length === 0) {
+    allTasksList.innerHTML = '<p style="color: #999; font-size: 13px; text-align: center; padding: 20px;">未找到符合條件的事項</p>';
+    return;
+  }
+
+  allTasksList.innerHTML = tasks.map(task => {
+    const projectName = getProjectName(task.projectId);
+    const featureName = getFeatureName(task.featureId);
+    const overdue = isOverdue(task.dueDate, task.status);
+    
+    return `
+      <div class="task-item" onclick="handleTaskClick('${task.id}')">
+        <input type="checkbox" class="task-checkbox">
+        <div class="task-content">
+          <div class="task-header">
+            <span class="task-title">${task.name}</span>
+            <span class="priority-badge ${getPriorityClass(task.priority)}">${task.priority}</span>
+            <span class="status-badge ${getStatusClass(task.status)}">${task.status}</span>
+            ${overdue ? '<span class="overdue-badge">逾期</span>' : ''}
+          </div>
+          <div class="task-meta">
+            <strong>${projectName}</strong> / ${featureName}
+            | 期限: ${formatDate(task.dueDate)}
+            ${task.assignee ? ' | 負責人: ' + task.assignee : ''}
+          </div>
+          ${task.nextAction ? '<div class="task-next-action">Next: ' + task.nextAction + '</div>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 }
 
 // ===== 模態操作 =====
