@@ -332,6 +332,45 @@ function initializeEventListeners() {
   // 搜尋和篩選（暫未實現）
   // document.getElementById('searchInput').addEventListener('input', handleSearch);
   // document.getElementById('statusFilter').addEventListener('change', handleFilter);
+
+  // Task 4：詳細頁面保存
+  document.getElementById('saveDetailBtn')?.addEventListener('click', saveTaskDetail);
+  document.getElementById('editNextActionBtn')?.addEventListener('click', () => {
+    const nextAction = prompt('編輯 Next Action:', document.getElementById('detailNextAction').textContent);
+    if (nextAction !== null) {
+      const taskId = document.getElementById('taskDetailModal').dataset.currentTaskId;
+      const task = state.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.nextAction = nextAction;
+        if (!task.workLogs) task.workLogs = [];
+        task.workLogs.unshift({
+          date: formatDate(today.toISOString().split('T')[0]),
+          content: `Next Action 已更新為：${nextAction}`,
+          notes: ''
+        });
+        openTaskDetailModal(taskId);
+        renderTodayView();
+      }
+    }
+  });
+
+  document.getElementById('addWorkLogBtn')?.addEventListener('click', () => {
+    const taskId = document.getElementById('taskDetailModal').dataset.currentTaskId;
+    const task = state.tasks.find(t => t.id === taskId);
+    if (task) {
+      const content = prompt('新增工作紀錄：');
+      if (content) {
+        if (!task.workLogs) task.workLogs = [];
+        task.workLogs.unshift({
+          date: formatDate(today.toISOString().split('T')[0]),
+          content: content,
+          notes: ''
+        });
+        openTaskDetailModal(taskId);
+        renderTodayView();
+      }
+    }
+  });
 }
 
 // ===== 模態操作 =====
@@ -469,11 +508,96 @@ function handleTaskClick(taskId) {
 
 // ===== 詳細頁面 & 編輯 =====
 
-// Task 4 時實現
+// 打開追蹤事項詳細頁
 function openTaskDetailModal(taskId) {
   const task = state.tasks.find(t => t.id === taskId);
   if (!task) return;
 
-  // 暫時使用 alert 預覽
-  alert(`任務詳細\n\n${task.name}\n專案: ${getProjectName(task.projectId)}\n功能: ${getFeatureName(task.featureId)}\nNext Action: ${task.nextAction || '無'}`);
+  // 填充詳細信息
+  document.getElementById('detailTaskName').textContent = task.name;
+  document.getElementById('detailProjectName').textContent = getProjectName(task.projectId);
+  document.getElementById('detailFeatureName').textContent = getFeatureName(task.featureId);
+  document.getElementById('detailAssignee').textContent = task.assignee || '未指派';
+  
+  const priorityBadge = document.getElementById('detailPriority');
+  priorityBadge.textContent = task.priority;
+  priorityBadge.className = 'priority-badge ' + getPriorityClass(task.priority);
+  
+  const statusBadge = document.getElementById('detailStatus');
+  statusBadge.textContent = task.status;
+  statusBadge.className = 'status-badge ' + getStatusClass(task.status);
+  
+  document.getElementById('detailDueDate').textContent = formatDate(task.dueDate);
+  document.getElementById('detailNextAction').textContent = task.nextAction || '（無）';
+
+  // 顯示等待他人信息
+  const waitingSection = document.getElementById('waitingSection');
+  if (task.waiting && task.waiting.isWaiting) {
+    waitingSection.style.display = 'block';
+    document.getElementById('detailWaitingFor').textContent = task.waiting.waitingFor;
+    document.getElementById('detailWaitingReason').textContent = task.waiting.reason;
+    document.getElementById('detailNextFollowUp').textContent = formatDate(task.waiting.nextFollowUpDate);
+  } else {
+    waitingSection.style.display = 'none';
+  }
+
+  // 顯示工作紀錄
+  const workLogsList = document.getElementById('workLogsList');
+  if (task.workLogs && task.workLogs.length > 0) {
+    workLogsList.innerHTML = task.workLogs.map(log => `
+      <div style="padding: 10px; background-color: #f9f9f9; border-radius: 4px; margin-bottom: 8px;">
+        <div style="font-weight: 600; font-size: 13px; color: #666;">${log.date}</div>
+        <div style="font-size: 13px; color: #212121; margin-top: 3px;">${log.content}</div>
+        ${log.notes ? '<div style="font-size: 12px; color: #999; margin-top: 3px;">' + log.notes + '</div>' : ''}
+      </div>
+    `).join('');
+  } else {
+    workLogsList.innerHTML = '<p style="font-size: 13px; color: #999;">暫無紀錄</p>';
+  }
+
+  // 保存當前任務 ID 以便後續修改
+  document.getElementById('taskDetailModal').dataset.currentTaskId = taskId;
+  
+  // 設定狀態下拉
+  document.getElementById('detailStatusSelect').value = '';
+
+  // 打開模態
+  document.getElementById('taskDetailModal').classList.remove('hidden');
+}
+
+// 保存詳細頁面修改
+function saveTaskDetail() {
+  const taskId = document.getElementById('taskDetailModal').dataset.currentTaskId;
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  const newStatus = document.getElementById('detailStatusSelect').value;
+  
+  if (newStatus && newStatus !== task.status) {
+    // 更新狀態
+    const oldStatus = task.status;
+    task.status = newStatus;
+    
+    // 新增工作紀錄
+    if (!task.workLogs) task.workLogs = [];
+    task.workLogs.unshift({
+      date: formatDate(today.toISOString().split('T')[0]),
+      content: `狀態已從「${oldStatus}」變更為「${newStatus}」`,
+      notes: ''
+    });
+
+    // 若改為等待他人，初始化等待資訊
+    if (newStatus === '等待他人' && !task.waiting) {
+      task.waiting = {
+        isWaiting: true,
+        waitingFor: '未指定',
+        reason: '',
+        nextFollowUpDate: today.toISOString().split('T')[0]
+      };
+    }
+  }
+
+  // 關閉模態並重新渲染
+  document.getElementById('taskDetailModal').classList.add('hidden');
+  renderTodayView();
 }

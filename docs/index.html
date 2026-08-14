@@ -178,6 +178,50 @@
     </div>
   </div>
 
+  <!-- Task Detail Modal -->
+  <div id="taskDetailModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content modal-lg">
+      <button class="modal-close">×</button>
+      <h2 id="detailTaskName"></h2>
+      <div class="detail-meta">
+        <p><strong>專案:</strong> <span id="detailProjectName"></span></p>
+        <p><strong>功能:</strong> <span id="detailFeatureName"></span></p>
+        <p><strong>負責人:</strong> <span id="detailAssignee"></span></p>
+        <p><strong>優先級:</strong> <span id="detailPriority" class="priority-badge"></span></p>
+        <p><strong>狀態:</strong> <span id="detailStatus" class="status-badge"></span></p>
+        <p><strong>期限:</strong> <span id="detailDueDate"></span></p>
+      </div>
+      <div class="detail-section">
+        <h3>Next Action</h3>
+        <p id="detailNextAction"></p>
+        <button id="editNextActionBtn" class="btn-secondary" style="margin-top: 10px;">編輯</button>
+      </div>
+      <div class="detail-section" id="waitingSection" style="display: none;">
+        <h3>等待他人</h3>
+        <p><strong>等待對象:</strong> <span id="detailWaitingFor"></span></p>
+        <p><strong>等待原因:</strong> <span id="detailWaitingReason"></span></p>
+        <p><strong>下一追蹤:</strong> <span id="detailNextFollowUp"></span></p>
+      </div>
+      <div class="detail-section">
+        <h3>工作紀錄</h3>
+        <div id="workLogsList" style="max-height: 200px; overflow-y: auto; margin-bottom: 10px;"></div>
+        <button id="addWorkLogBtn" class="btn-secondary">新增紀錄</button>
+      </div>
+      <div class="detail-actions" style="margin-top: 20px; display: flex; gap: 10px;">
+        <select id="detailStatusSelect" class="filter-select">
+          <option value="">-- 修改狀態 --</option>
+          <option value="待處理">待處理</option>
+          <option value="進行中">進行中</option>
+          <option value="等待他人">等待他人</option>
+          <option value="已完成">已完成</option>
+        </select>
+        <button id="saveDetailBtn" class="btn-primary">保存</button>
+        <button class="btn-secondary modal-close">關閉</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Task Modal -->
   <div id="addTaskModal" class="modal hidden">
     <div class="modal-overlay"></div>

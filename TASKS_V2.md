@@ -200,7 +200,7 @@ function calculateProgress(projectId) {
 
 **目標**：實現追蹤事項詳細頁、編輯功能、狀態修改、Next Action 更新
 
-**範圍**：
+**狀態**：✅ **完成**
 - 追蹤事項詳細頁面
 - 編輯表單
 - 狀態修改（含 Waiting 邏輯）
