@@ -427,9 +427,17 @@ function populateProjectSelects() {
 
   projectSelects.forEach(select => {
     if (select) {
-      select.innerHTML = state.projects.map(p => `
+      const options = state.projects.map(p => `
         <option value="${p.id}">${p.name}</option>
       `).join('');
+      
+      if (select.id === 'featureProjectSelect') {
+        select.innerHTML = '<option value="">-- 選擇專案 --</option>' + options;
+      } else if (select.id === 'taskProjectSelect') {
+        select.innerHTML = '<option value="">-- 選擇專案 --</option>' + options;
+      } else {
+        select.innerHTML = '<option value="">全部專案</option>' + options;
+      }
     }
   });
 
@@ -440,15 +448,32 @@ function updateFeatureSelect() {
   const projectId = document.getElementById('taskProjectSelect').value;
   const featureSelect = document.getElementById('taskFeatureSelect');
 
+  if (!projectId) {
+    featureSelect.innerHTML = '<option value="">-- 先選擇專案 --</option>';
+    return;
+  }
+
   const features = getFeaturesByProject(projectId);
-  featureSelect.innerHTML = features.map(f => `
+  const options = features.map(f => `
     <option value="${f.id}">${f.name}</option>
   `).join('');
+
+  featureSelect.innerHTML = options || '<option value="">此專案無功能</option>';
 }
 
 // ===== 點擊處理 =====
 
 function handleTaskClick(taskId) {
-  console.log('點擊任務:', taskId);
-  // Task 4 時實現詳細頁面
+  openTaskDetailModal(taskId);
+}
+
+// ===== 詳細頁面 & 編輯 =====
+
+// Task 4 時實現
+function openTaskDetailModal(taskId) {
+  const task = state.tasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  // 暫時使用 alert 預覽
+  alert(`任務詳細\n\n${task.name}\n專案: ${getProjectName(task.projectId)}\n功能: ${getFeatureName(task.featureId)}\nNext Action: ${task.nextAction || '無'}`);
 }
